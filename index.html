@@ -198,9 +198,11 @@
         return;
       }
 
+      const yearsLeft = lifeExpectancy - currentAge; // 从“明年”开始算多少年
       let total = 0;
-      const yearsLeft = lifeExpectancy - currentAge;
-      let yearlySpending = monthlySpending * 12;
+
+      // 第一年：从“明年”开始 → 先乘一次 (1 + inflation)
+      let yearlySpending = monthlySpending * 12 * (1 + inflation);
 
       for (let i = 0; i < yearsLeft; i++) {
         total += yearlySpending;
@@ -211,11 +213,9 @@
         "按你的输入估算，这一辈子大概需要花费 " + formatNumber(total) + " 元。";
 
       resultSub.textContent =
-        "从现在 " +
-        currentAge +
-        " 岁到 " +
+        "从你下一年开始到约 " +
         lifeExpectancy +
-        " 岁，假设每月初始花费约 " +
+        " 岁，假设当前每月花费约 " +
         formatNumber(monthlySpending) +
         " 元，未来每年按通货膨胀率约 " +
         (inflation * 100).toFixed(1) +
