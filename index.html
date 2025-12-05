@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>一辈子要花多少钱？｜计算器</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      max-width: 520px;
+      margin: 32px auto 40px;
+      padding: 0 16px;
+      line-height: 1.6;
+      color: #111;
+      background: #fafafa;
+    }
+    h1 {
+      font-size: 22px;
+      margin-bottom: 6px;
+    }
+    p.desc {
+      color: #555;
+      font-size: 14px;
+      margin-top: 0;
+    }
+    label {
+      display: block;
+      margin-top: 16px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .note {
+      margin-top: 4px;
+      color: #777;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    input[type="number"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 9px 11px;
+      margin-top: 6px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      background: #fff;
+    }
+    input[type="number"]:focus {
+      outline: none;
+      border-color: #111;
+    }
+    button {
+      margin-top: 22px;
+      width: 100%;
+      padding: 11px 16px;
+      font-size: 15px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      background: #111;
+      color: #fff;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    .result-box {
+      margin-top: 24px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      background: #f0f0f0;
+      font-size: 15px;
+    }
+    .result-main {
+      font-weight: 700;
+      font-size: 18px;
+      margin-bottom: 6px;
+    }
+    .result-sub {
+      font-size: 13px;
+      color: #555;
+    }
+    .error {
+      color: #c00;
+      font-size: 13px;
+      margin-top: 8px;
+    }
+
+    /* 📱 移动端优化 */
+    @media (max-width: 480px) {
+      body {
+        margin: 20px auto 28px;
+        padding: 0 14px;
+      }
+      h1 {
+        font-size: 20px;
+      }
+      p.desc {
+        font-size: 13px;
+      }
+      label {
+        font-size: 13px;
+        margin-top: 14px;
+      }
+      input[type="number"] {
+        font-size: 13px;
+        padding: 9px 10px;
+      }
+      button {
+        font-size: 14px;
+        padding: 10px 14px;
+      }
+      .result-main {
+        font-size: 17px;
+      }
+      .result-sub {
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <h1>一辈子要花多少钱？</h1>
+  <p class="desc">
+    数据只存在你的浏览器里，不会被保存或上传。刷新页面即可重置。
+  </p>
+
+  <label>
+    现在年龄（岁）
+    <input id="currentAge" type="number" min="0" max="120" placeholder="例如：30" />
+  </label>
+
+  <label>
+    预期寿命（岁）
+    <input id="lifeExpectancy" type="number" min="1" max="120" placeholder="例如：90" />
+  </label>
+
+  <label>
+    目前平均每月花费（元）
+    <input id="monthlySpending" type="number" min="0" step="100" placeholder="例如：8000" />
+    <p class="note">
+      输入实际花费，或你觉得“生活还不错”应该的花费。建议包含一些年度消费平均到月的情况，如旅游等。
+    </p>
+  </label>
+
+  <label>
+    通货膨胀率（%）
+    <input id="inflation" type="number" min="0" step="0.1" value="2" />
+    <p class="note">
+      直接输入数字（无需百分号）；参考：自2000年，中国平均2.02%，日本0.41%，美国2.58%
+    </p>
+  </label>
+
+  <button id="calcBtn" type="button">帮我算一下一辈子要花多少钱</button>
+
+  <div id="error" class="error"></div>
+
+  <div id="result" class="result-box" style="display: none;">
+    <div class="result-main" id="resultMain"></div>
+    <div class="result-sub" id="resultSub"></div>
+  </div>
+
+  <script>
+    function formatNumber(n) {
+      return n.toLocaleString("zh-CN", { maximumFractionDigits: 0 });
+    }
+
+    document.getElementById("calcBtn").addEventListener("click", function () {
+      const currentAge = Number(document.getElementById("currentAge").value);
+      const lifeExpectancy = Number(document.getElementById("lifeExpectancy").value);
+      const monthlySpending = Number(document.getElementById("monthlySpending").value);
+
+      const inflationInput = document.getElementById("inflation").value;
+      const inflation = inflationInput === "" ? 0 : Number(inflationInput) / 100;
+
+      const errorEl = document.getElementById("error");
+      const resultBox = document.getElementById("result");
+      const resultMain = document.getElementById("resultMain");
+      const resultSub = document.getElementById("resultSub");
+
+      errorEl.textContent = "";
+      resultBox.style.display = "none";
+
+      if (
+        !currentAge ||
+        !lifeExpectancy ||
+        !monthlySpending ||
+        currentAge < 0 ||
+        lifeExpectancy <= currentAge ||
+        monthlySpending < 0
+      ) {
+        errorEl.textContent = "请检查输入：年龄要合理，预期寿命需大于当前年龄，月花费需大于等于 0。";
+        return;
+      }
+
+      if (inflation < 0) {
+        errorEl.textContent = "请检查通货膨胀率：请输入大于等于 0 的数字。";
+        return;
+      }
+
+      let total = 0;
+      const yearsLeft = lifeExpectancy - currentAge;
+      let yearlySpending = monthlySpending * 12;
+
+      for (let i = 0; i < yearsLeft; i++) {
+        total += yearlySpending;
+        yearlySpending *= (1 + inflation);
+      }
+
+      resultMain.textContent =
+        "按你的输入估算，这一辈子大概需要花费 " + formatNumber(total) + " 元。";
+
+      resultSub.textContent =
+        "从现在 " +
+        currentAge +
+        " 岁到 " +
+        lifeExpectancy +
+        " 岁，假设每月初始花费约 " +
+        formatNumber(monthlySpending) +
+        " 元，未来每年按通货膨胀率约 " +
+        (inflation * 100).toFixed(1) +
+        "% 增长。";
+
+      resultBox.style.display = "block";
+    });
+  </script>
+</body>
+</html>
